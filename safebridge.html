@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' blob: data:; connect-src 'none';" />
+  <title>密桥 SafeBridge — 发给 DeepSeek/AI 前的合同与文档本地双向脱敏还原工作台</title>
+  <style>
+    :root {
+      --bg: #080d1a;
+      --surface: #0f172a;
+      --card: #15203b;
+      --border: rgba(148, 163, 184, 0.18);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #3b82f6;
+      --indigo: #6366f1;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .container { max-width: 1240px; margin: 0 auto; padding: 20px 20px 60px; }
+    header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+      padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 18px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #06b6d4);
+      display: grid; place-items: center; font-weight: 800; font-size: 16px; color: #fff;
+    }
+    .brand h1 { margin: 0; font-size: 18px; }
+    .brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .sec-pill {
+      padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 600;
+      background: rgba(16, 185, 129, 0.14); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.32);
+    }
+    .tier-pill {
+      padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer;
+      background: rgba(99, 102, 241, 0.2); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.45);
+    }
+    .tier-pill.pro { background: linear-gradient(135deg, #4f46e5, #0891b2); color: #fff; border: none; }
+
+    .workflow {
+      display: grid; grid-template-columns: 1fr 330px 1fr; gap: 14px; align-items: stretch;
+    }
+    @media (max-width: 1024px) { .workflow { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .step-title { font-weight: 700; font-size: 14.5px; display: flex; align-items: center; gap: 7px; }
+    .step-num {
+      width: 22px; height: 22px; border-radius: 6px; background: var(--indigo);
+      color: #fff; display: inline-grid; place-items: center; font-size: 12px;
+    }
+    textarea {
+      width: 100%; min-height: 250px; flex: 1; resize: vertical;
+      background: #070b14; color: var(--text); border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px; font: 13.5px/1.65 "PingFang SC", "Microsoft YaHei", monospace;
+    }
+    textarea:focus { outline: 1px solid var(--indigo); }
+
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    button, .file-lbl {
+      border: 1px solid var(--border); background: var(--card); color: var(--text);
+      padding: 7px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    }
+    button:hover, .file-lbl:hover { border-color: var(--indigo); }
+    button.primary { background: linear-gradient(135deg, #4f46e5, #2563eb); border: none; color: #fff; }
+    button.success { background: #059669; border: none; color: #fff; }
+    input[type="file"] { display: none; }
+
+    /* Middle Mapping Vault */
+    .vault-stats {
+      background: var(--card); border-radius: 10px; padding: 9px 11px;
+      font-size: 12px; color: var(--muted); display: flex; justify-content: space-between;
+    }
+    .map-list {
+      max-height: 310px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+      padding-right: 2px;
+    }
+    .map-item {
+      background: #0a1020; border: 1px solid var(--border); border-radius: 8px;
+      padding: 7px 9px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; gap: 6px;
+    }
+    .tok { color: #38bdf8; font-weight: 700; font-family: ui-monospace, Consolas, monospace; white-space: nowrap; }
+    .orig { color: #fde68a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 145px; }
+    .custom-add { display: flex; gap: 6px; }
+    .custom-add input, .lic-row input {
+      flex: 1; background: #070b14; border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); padding: 6px 9px; font-size: 12.5px;
+    }
+
+    /* Bottom Restore Section */
+    .restore-section {
+      margin-top: 16px; background: var(--surface); border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 14px; padding: 16px;
+    }
+    .restore-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+    @media (max-width: 900px) { .restore-grid { grid-template-columns: 1fr; } }
+
+    /* Pro Modal / Drawer */
+    .pro-bar {
+      margin-top: 16px; background: linear-gradient(135deg, rgba(79,70,229,0.18), rgba(15,23,42,0.95));
+      border: 1px solid rgba(99, 102, 241, 0.45); border-radius: 14px; padding: 16px;
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;
+    }
+    .lic-row { display: flex; gap: 8px; min-width: 320px; }
+    .toast {
+      position: fixed; bottom: 22px; right: 22px; background: #1e293b; color: #fff;
+      border: 1px solid var(--indigo); border-radius: 10px; padding: 10px 16px;
+      font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,0.45); opacity: 0;
+      pointer-events: none; transition: opacity 160ms ease; z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+    .meta-note { font-size: 11.5px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">密桥</div>
+        <div>
+          <h1>密桥 SafeBridge · AI 合同与文档本地双向脱敏还原工作台</h1>
+          <p>把合同喂给 DeepSeek / Kimi / ChatGPT 审阅前：1 秒本地脱敏 → AI 审改 → 1 秒无损还原真名与 Word 排版</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="sec-pill">🔒 纯本地离线运行 · CSP 封死外网上传 (connect-src 'none')</span>
+        <span class="tier-pill" id="tier-badge">FREE 体验版（≤1500字文本）</span>
+      </div>
+    </header>
+
+    <div class="workflow">
+      <!-- Panel 1: Raw Input -->
+      <section class="panel">
+        <div class="panel-head">
+          <div class="step-title"><span class="step-num">1</span> 放入原始机密合同 / 文档</div>
+          <span class="meta-note" id="char-count">0 字</span>
+        </div>
+        <div class="btn-row">
+          <button id="btn-sample">📄 一键填入真实感示例合同</button>
+          <label class="file-lbl" title="Pro 专享：直接导入 Word (.docx) 保留原排版">
+            📎 导入 Word (.docx) <span style="color:#a5b4fc;font-size:11px;">[PRO]</span>
+            <input type="file" id="file-docx-in" accept=".docx" />
+          </label>
+          <button id="btn-clear">清空</button>
+        </div>
+        <textarea id="raw-input" placeholder="在此粘贴需要发给 DeepSeek / Kimi 审查的合同、协议、标书或业务汇报文本……&#10;&#10;免费版支持单次 1,500 字以内文本完整双向体验；解锁 Pro 终身版支持不限字数长合同 + Word (.docx) 原格式进出。"></textarea>
+        <div class="btn-row">
+          <button class="primary" id="btn-anonymize">⚡ 立即本地识别并生成脱敏稿 →</button>
+        </div>
+      </section>
+
+      <!-- Panel 2: Local Mapping Vault -->
+      <section class="panel">
+        <div class="panel-head">
+          <div class="step-title"><span class="step-num">2</span> 本地映射保险箱</div>
+          <span class="meta-note">仅存于当前内存</span>
+        </div>
+        <div class="vault-stats">
+          <span>识别主体：<strong id="stat-unique" style="color:#fff">0</strong> 个</span>
+          <span>替换总处数：<strong id="stat-total" style="color:#38bdf8">0</strong> 处</span>
+        </div>
+        <div class="custom-add">
+          <input type="text" id="input-custom-term" placeholder="补充特定敏感词（如产品代号/人名）" />
+          <button id="btn-add-custom">+ 加入脱敏</button>
+        </div>
+        <div class="map-list" id="map-list">
+          <div class="meta-note" style="text-align:center;padding:36px 10px;">
+            点击左侧「填入示例合同」即可查看自动识别的甲乙方公司、统一社会信用代码、法定代表人、电话、银行账号与大小写金额映射关系。
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:auto;">
+          <button id="btn-export-map">💾 导出映射表 (.json) [PRO]</button>
+          <label class="file-lbl">
+            📂 导入映射表
+            <input type="file" id="file-map-in" accept=".json" />
+          </label>
+        </div>
+      </section>
+
+      <!-- Panel 3: Safe Output for AI -->
+      <section class="panel">
+        <div class="panel-head">
+          <div class="step-title"><span class="step-num">3</span> 安全脱敏稿（可放心发给 AI）</div>
+          <span class="meta-note" style="color:#6ee7b7;">✓ 不含真实主体信息</span>
+        </div>
+        <div class="btn-row">
+          <button class="primary" id="btn-copy-prompt">📋 一键复制「含 DeepSeek 保代号审阅指令」全文</button>
+          <button id="btn-copy-plain">仅复制脱敏正文</button>
+          <button id="btn-dl-safe-docx">📥 导出脱敏 Word (.docx) [PRO]</button>
+        </div>
+        <textarea id="safe-output" readonly placeholder="此处生成已脱敏的安全文本，所有敏感实体均被替换为唯一语义代号（如【公司_01】【金额_01】），可直接发给任何云端大模型审查。"></textarea>
+      </section>
+    </div>
+
+    <!-- Step 4: AI Response Lossless Restoration -->
+    <section class="restore-section">
+      <div class="panel-head">
+        <div class="step-title">
+          <span class="step-num" style="background:#059669;">4</span>
+          粘贴 AI 审改后的文本（或导入 AI 修改后的 .docx）→ 1 秒无损还原全部真名与金额
+        </div>
+        <div class="btn-row">
+          <button id="btn-sim-ai">🤖 模拟一次 DeepSeek 修改返回稿（快速体验还原）</button>
+          <label class="file-lbl">
+            📎 还原 Word (.docx) 文件 [PRO]
+            <input type="file" id="file-docx-restore" accept=".docx" />
+          </label>
+          <button class="success" id="btn-restore">🔄 一键无损还原真实信息</button>
+          <button id="btn-copy-restored">📋 复制还原结果</button>
+        </div>
+      </div>
+      <div class="restore-grid">
+        <textarea id="ai-input" style="min-height:170px;" placeholder="把 DeepSeek / Kimi / ChatGPT 审改后包含【公司_01】等代号的回复粘贴到这里……"></textarea>
+        <textarea id="restored-output" readonly style="min-height:170px;" placeholder="点击「一键无损还原真实信息」后，这里立即输出已精确回填全部真实公司名、人名、账号与金额的最终定稿！"></textarea>
+      </div>
+    </section>
+
+    <!-- Pro Lifetime Activation Bar -->
+    <section class="pro-bar" id="pro-bar">
+      <div>
+        <strong style="font-size:15px;" id="pro-title">解锁「密桥 SafeBridge Pro」终身单机授权（早鸟买断 ¥29.9 · 零年费订阅）</strong>
+        <div class="meta-note" style="margin-top:4px;">
+          一次买断永久解锁：① 不限字数万字长合同/标书　② Word (<code>.docx</code>) 原格式拖入脱敏与还原导出　③ 专属自定义词库本地永久记忆与映射表导出备份。支持 3 台办公电脑离线激活。
+        </div>
+      </div>
+      <div class="lic-row">
+        <input type="text" id="input-license" placeholder="粘贴 SBPRO-... 激活码离线解锁" />
+        <button class="primary" id="btn-activate">立即激活</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+const SB_PUBLIC_KEY_SPKI_B64 = 'MCowBQYDK2VwAyEAFik2XE5qQVP3Gab6DYefvvb8OEacJxvTJYobc/9fwlM=';
+
+function stdB64ToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function canonicalB64UrlToBytes(b64u) {
+  if (!/^[A-Za-z0-9_-]+$/.test(b64u)) throw new Error('bad_chars');
+  const clean = b64u.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = clean + '='.repeat((4 - (clean.length % 4)) % 4);
+  const bin = atob(padded);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const re = btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  if (re !== b64u) throw new Error('non_canonical');
+  return bytes;
+}
+
+let pubKeyPromise = null;
+async function verifySafeBridgeKey(rawKey) {
+  if (typeof rawKey !== 'string') return { valid: false };
+  const trimmed = rawKey.trim();
+  if (!trimmed.startsWith('SBPRO-')) return { valid: false };
+  const parts = trimmed.slice(6).split('.');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return { valid: false };
+
+  try {
+    const payloadBytes = canonicalB64UrlToBytes(parts[0]);
+    const sigBytes = canonicalB64UrlToBytes(parts[1]);
+    if (sigBytes.length !== 64) return { valid: false };
+
+    if (!pubKeyPromise) {
+      pubKeyPromise = globalThis.crypto.subtle.importKey(
+        'spki',
+        stdB64ToBytes(SB_PUBLIC_KEY_SPKI_B64).buffer,
+        { name: 'Ed25519' },
+        false,
+        ['verify']
+      );
+    }
+    const key = await pubKeyPromise;
+    const ok = await globalThis.crypto.subtle.verify({ name: 'Ed25519' }, key, sigBytes, payloadBytes);
+    if (!ok) return { valid: false };
+
+    const payload = JSON.parse(new TextDecoder().decode(payloadBytes));
+    if (payload.p !== 'SB' || payload.t !== 'PRO' || !payload.s) return { valid: false };
+    return { valid: true, serial: payload.s, channel: payload.c || 'CN' };
+  } catch {
+    return { valid: false };
+  }
+}
+
+// SafeBridge (密桥) — Pure Local Chinese Contract & Legal Bidirectional Anonymizer Engine
+
+const CN_ID_WEIGHTS = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+const CN_ID_CHECK = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
+function isValidCnId(idStr) {
+  const s = idStr.toUpperCase();
+  if (!/^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dX]$/.test(s)) return false;
+  let sum = 0;
+  for (let i = 0; i < 17; i++) sum += Number(s[i]) * CN_ID_WEIGHTS[i];
+  return CN_ID_CHECK[sum % 11] === s[17];
+}
+
+// GB 32100-2015 18-char Unified Social Credit Code (统一社会信用代码) checksum validation
+const USCC_CHARS = '0123456789ABCDEFGHJKLMNPQRTUWXY';
+const USCC_WEIGHTS = [1, 3, 9, 27, 19, 26, 16, 17, 20, 29, 25, 13, 8, 24, 10, 30, 28];
+function isValidUscc(code) {
+  const s = code.toUpperCase();
+  if (!/^[0-9A-HJ-NPQRTUWXY]{2}\d{6}[0-9A-HJ-NPQRTUWXY]{10}$/.test(s)) return false;
+  let sum = 0;
+  for (let i = 0; i < 17; i++) {
+    const idx = USCC_CHARS.indexOf(s[i]);
+    if (idx < 0) return false;
+    sum += idx * USCC_WEIGHTS[i];
+  }
+  const checkIdx = (31 - (sum % 31)) % 31;
+  return USCC_CHARS[checkIdx] === s[17];
+}
+const TYPE_LABELS = {
+  company: '公司',
+  person: '姓名',
+  uscc: '信用代码',
+  id_cn: '身份证',
+  bank_acct: '账号',
+  phone: '电话',
+  email: '邮箱',
+  address: '地址',
+  amount_cn: '大写金额',
+  amount_num: '金额',
+  custom: '自定义',
+};
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Extract sensitive contract entities and build a deterministic bidirectional mapping.
+ * Same entity value across the document ALWAYS gets the exact same token, e.g. 【公司_01】.
+ */
+function analyzeContractText(text, options = {}) {
+  if (!text || typeof text !== 'string') {
+    return { items: [], anonymizedText: text || '', mapping: {} };
+  }
+
+  const enabled = {
+    company: true,
+    person: true,
+    uscc: true,
+    id_cn: true,
+    bank_acct: true,
+    phone: true,
+    email: true,
+    address: true,
+    amount_cn: true,
+    amount_num: true,
+    custom: true,
+    ...(options.enabledTypes || {}),
+  };
+
+  // Collect raw spans { type, priority, start, end, value }
+  const spans = [];
+  const pushSpan = (type, priority, start, end, value) => {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length < 2) return;
+    const lead = value.indexOf(trimmed);
+    spans.push({
+      type,
+      priority,
+      start: start + lead,
+      end: start + lead + trimmed.length,
+      value: trimmed,
+    });
+  };
+
+  // 1. Custom dictionary terms (highest priority)
+  if (enabled.custom && Array.isArray(options.customTerms)) {
+    for (const rawTerm of options.customTerms) {
+      const term = (typeof rawTerm === 'string' ? rawTerm : rawTerm?.term || '').trim();
+      if (term.length < 2) continue;
+      const re = new RegExp(escapeRegExp(term), 'g');
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        pushSpan('custom', 120, m.index, m.index + m[0].length, m[0]);
+      }
+    }
+  }
+
+  // 2. Contract Header Context Rules (甲方/乙方/法定代表人/联系人/地址/银行账号)
+  const partyRe = /(?:甲方|乙方|丙方|丁方|委托方|受托方|出租方|承租方|发包人|承包人|买受人|出卖人|披露方|接收方|借款人|贷款人|保证人)(?:（[^）\n]{1,12}）|\([^)\n]{1,12}\))?\s*[：:]\s*([^\n，,；;。：（(]{2,40})/g;
+  let m;
+  while ((m = partyRe.exec(text)) !== null) {
+    const val = m[1].trim();
+    const valStart = m.index + m[0].lastIndexOf(m[1]);
+    const isComp = /(?:公司|集团|企业|合伙|事务所|中心|工厂|银行|支行|分行|研究院|学院|大学|医院|局|委员会)$/.test(val);
+    const kind = isComp ? 'company' : 'person';
+    if (enabled[kind]) {
+      pushSpan(kind, 110, valStart, valStart + m[1].length, m[1]);
+    }
+  }
+
+  if (enabled.person) {
+    const personCtxRe = /(?:法定代表人|负责人|授权代表|签约代表|联系人|经办人|收货人|紧急联系人)\s*[：:]\s*([\u4e00-\u9fa5·]{2,10})(?=[，,；;。\s\n]|$)/g;
+    while ((m = personCtxRe.exec(text)) !== null) {
+      const valStart = m.index + m[0].lastIndexOf(m[1]);
+      pushSpan('person', 108, valStart, valStart + m[1].length, m[1]);
+    }
+  }
+
+  if (enabled.address) {
+    const addrCtxRe = /(?:注册地址|通讯地址|联系地址|住所地|送达地址|项目地址|收货地址)\s*[：:]\s*([^\n；;。]{6,60})/g;
+    while ((m = addrCtxRe.exec(text)) !== null) {
+      const valStart = m.index + m[0].lastIndexOf(m[1]);
+      pushSpan('address', 105, valStart, valStart + m[1].length, m[1]);
+    }
+  }
+
+  if (enabled.bank_acct) {
+    const bankCtxRe = /(?:银行账号|对公账号|收款账号|账户账号|开户账号|账号)\s*[：:]\s*(\d[\d -]{8,28}\d)/g;
+    while ((m = bankCtxRe.exec(text)) !== null) {
+      const valStart = m.index + m[0].lastIndexOf(m[1]);
+      pushSpan('bank_acct', 106, valStart, valStart + m[1].length, m[1]);
+    }
+  }
+
+  // 3. Standalone Company Suffixes anywhere in body clauses
+  if (enabled.company) {
+    const compRe = /[\u4e00-\u9fa5]{2,24}(?:有限责任公司|股份有限公司|集团有限公司|有限公司|合伙企业（有限合伙）|律师事务所|会计师事务所|专利代理事务所)/g;
+    while ((m = compRe.exec(text)) !== null) {
+      // Trim leading prepositions like 与/由/向/及/和/为/系 if stuck to company name
+      const cleaned = m[0].replace(/^(?:本合同由|甲方为|乙方为|其中|以及|或者|通知|授权|委托|向|与|由|及|和|对|系|为)+/, '');
+      if (cleaned.length >= 6) {
+        const offset = m[0].length - cleaned.length;
+        pushSpan('company', 98, m.index + offset, m.index + m[0].length, cleaned);
+      }
+    }
+  }
+
+  // 4. Unified Social Credit Code (18 chars, validated or context-labeled)
+  if (enabled.uscc) {
+    const usccRe = /(?<![0-9A-Za-z])[0-9A-HJ-NPQRTUWXY]{2}\d{6}[0-9A-HJ-NPQRTUWXY]{10}(?![0-9A-Za-z])/g;
+    while ((m = usccRe.exec(text)) !== null) {
+      if (isValidUscc(m[0])) {
+        pushSpan('uscc', 104, m.index, m.index + 18, m[0]);
+      }
+    }
+  }
+
+  // 5. CN 18-digit ID Card (ISO 7064 validated)
+  if (enabled.id_cn) {
+    const idRe = /(?<!\d)[1-9]\d{5}(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx](?!\d)/g;
+    while ((m = idRe.exec(text)) !== null) {
+      if (isValidCnId(m[0])) {
+        pushSpan('id_cn', 103, m.index, m.index + 18, m[0]);
+      }
+    }
+  }
+
+  // 6. Bank / Corporate card numbers (16-22 digits standalone)
+  if (enabled.bank_acct) {
+    const cardRe = /(?<!\d)(?:\d{4}[ -]){3,4}\d{2,6}(?!\d)|(?<!\d)[645]\d{15,18}(?!\d)/g;
+    while ((m = cardRe.exec(text)) !== null) {
+      pushSpan('bank_acct', 95, m.index, m.index + m[0].length, m[0]);
+    }
+  }
+
+  // 7. Phone numbers (CN mobile + landline)
+  if (enabled.phone) {
+    const phoneRe = /(?<!\d)(?:\+?86[ -]?)?1[3-9]\d[ -]?\d{4}[ -]?\d{4}(?!\d)|(?<!\d)0\d{2,3}-\d{7,8}(?!\d)/g;
+    while ((m = phoneRe.exec(text)) !== null) {
+      pushSpan('phone', 94, m.index, m.index + m[0].length, m[0]);
+    }
+  }
+
+  // 8. Email
+  if (enabled.email) {
+    const emailRe = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
+    while ((m = emailRe.exec(text)) !== null) {
+      pushSpan('email', 93, m.index, m.index + m[0].length, m[0]);
+    }
+  }
+
+  // 9. Chinese Uppercase RMB Amounts (e.g. 人民币壹佰贰拾捌万肆仟伍佰元整)
+  if (enabled.amount_cn) {
+    const cnAmtRe = /(?:人民币)?[零壹贰叁肆伍陆柒捌玖拾佰仟万亿]{2,}(?:元|圆)(?:整|正|[零壹贰叁肆伍陆柒捌玖]角(?:[零壹贰叁肆伍陆柒捌玖]分)?|[零壹贰叁肆伍陆柒捌玖]分)/g;
+    while ((m = cnAmtRe.exec(text)) !== null) {
+      pushSpan('amount_cn', 92, m.index, m.index + m[0].length, m[0]);
+    }
+  }
+
+  // 10. Numeric Currency Amounts
+  if (enabled.amount_num) {
+    const numAmtRe = /(?:(?:RMB|CNY|USD|EUR|HKD)\s?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|[¥￥$€]\s?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?(?:\s?万元|\s?元)?|\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?\s?(?:万元整|万元|元整|元人民币|万美元|美元))/g;
+    while ((m = numAmtRe.exec(text)) !== null) {
+      pushSpan('amount_num', 90, m.index, m.index + m[0].length, m[0]);
+    }
+  }
+
+  // Also propagate any high-confidence discovered party/person/company names across ALL occurrences in text!
+  const discoveredExact = new Map(); // value -> { type, priority }
+  for (const s of spans) {
+    if ((s.type === 'company' || s.type === 'person') && s.priority >= 98 && s.value.length >= 2) {
+      if (!discoveredExact.has(s.value)) {
+        discoveredExact.set(s.value, { type: s.type, priority: 99 });
+      }
+    }
+  }
+  for (const [val, meta] of discoveredExact.entries()) {
+    const re = new RegExp(escapeRegExp(val), 'g');
+    while ((m = re.exec(text)) !== null) {
+      pushSpan(meta.type, meta.priority, m.index, m.index + val.length, val);
+    }
+  }
+
+  // Resolve overlaps greedily: priority desc -> length desc -> start asc
+  spans.sort((a, b) => {
+    if (b.priority !== a.priority) return b.priority - a.priority;
+    const lenDiff = (b.end - b.start) - (a.end - a.start);
+    if (lenDiff !== 0) return lenDiff;
+    return a.start - b.start;
+  });
+
+  const accepted = [];
+  for (const s of spans) {
+    if (options.disabledValues && options.disabledValues.has(s.value)) continue;
+    const hit = accepted.some((a) => !(s.end <= a.start || s.start >= a.end));
+    if (!hit) accepted.push(s);
+  }
+  accepted.sort((a, b) => a.start - b.start);
+
+  // Assign deterministic sequential tokens per type in order of first appearance
+  const counters = {};
+  const valueToToken = new Map();
+  const tokenToMeta = {};
+
+  for (const s of accepted) {
+    if (!valueToToken.has(s.value)) {
+      counters[s.type] = (counters[s.type] || 0) + 1;
+      const idx = String(counters[s.type]).padStart(2, '0');
+      const label = TYPE_LABELS[s.type] || '敏感项';
+      const token = `【${label}_${idx}】`;
+      valueToToken.set(s.value, token);
+      tokenToMeta[token] = {
+        token,
+        type: s.type,
+        label,
+        original: s.value,
+        occurrences: 0,
+      };
+    }
+    tokenToMeta[valueToToken.get(s.value)].occurrences++;
+  }
+
+  // Build anonymized output
+  let out = '';
+  let cursor = 0;
+  for (const s of accepted) {
+    out += text.slice(cursor, s.start);
+    out += valueToToken.get(s.value);
+    cursor = s.end;
+  }
+  out += text.slice(cursor);
+
+  return {
+    anonymizedText: out,
+    totalReplacements: accepted.length,
+    uniqueEntities: Object.keys(tokenToMeta).length,
+    items: Object.values(tokenToMeta),
+    mapping: Object.fromEntries(
+      Object.values(tokenToMeta).map((item) => [item.token, item.original])
+    ),
+  };
+}
+
+/**
+ * Losslessly restore AI-revised text back to real contract entities.
+ * Handles both full-width brackets 【公司_01】 and accidental AI half-width [公司_01] conversions!
+ */
+function restoreContractText(aiText, mapping) {
+  if (!aiText || !mapping || typeof mapping !== 'object') {
+    return { restoredText: aiText || '', restoredCount: 0 };
+  }
+  let result = aiText;
+  let restoredCount = 0;
+
+  const entries = Object.entries(mapping).sort((a, b) => b[0].length - a[0].length);
+  for (const [token, original] of entries) {
+    const inner = token.replace(/^【|】$/g, '');
+    // Match 【公司_01】 OR [公司_01] OR 【 公司_01 】 in case LLM normalized punctuation
+    const flexibleRe = new RegExp(`[【\\[]\\s*${escapeRegExp(inner)}\\s*[】\\]]`, 'g');
+    result = result.replace(flexibleRe, () => {
+      restoredCount++;
+      return original;
+    });
+  }
+
+  return { restoredText: result, restoredCount };
+}
+
+// Pure-JS Zero-Dependency .docx (ZIP + XML) Local Reader & Lossless Replacer
+// Uses Web Standard DecompressionStream / CompressionStream ('deflate-raw') — works 100% offline in Edge/Chrome & Node 24!
+
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) {
+      c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+    }
+    table[i] = c >>> 0;
+  }
+  return table;
+})();
+
+function crc32(bytes) {
+  let crc = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) {
+    crc = CRC_TABLE[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+async function streamTransform(bytes, stream) {
+  const writer = stream.writable.getWriter();
+  writer.write(bytes);
+  writer.close();
+  const reader = stream.readable.getReader();
+  const chunks = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    total += value.byteLength;
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    out.set(c, offset);
+    offset += c.byteLength;
+  }
+  return out;
+}
+
+async function inflateRaw(bytes) {
+  return streamTransform(bytes, new DecompressionStream('deflate-raw'));
+}
+
+async function deflateRaw(bytes) {
+  return streamTransform(bytes, new CompressionStream('deflate-raw'));
+}
+async function unzipEntries(arrayBuffer) {
+  const buf = new Uint8Array(arrayBuffer);
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+
+  // Locate End of Central Directory (EOCD) signature 0x06054b50
+  let eocdOffset = -1;
+  for (let i = buf.length - 22; i >= Math.max(0, buf.length - 65557); i--) {
+    if (view.getUint32(i, true) === 0x06054b50) {
+      eocdOffset = i;
+      break;
+    }
+  }
+  if (eocdOffset < 0) throw new Error('Invalid .docx / ZIP archive');
+
+  const totalEntries = view.getUint16(eocdOffset + 10, true);
+  const cdOffset = view.getUint32(eocdOffset + 16, true);
+
+  const entries = [];
+  let ptr = cdOffset;
+  const decoder = new TextDecoder('utf-8');
+
+  for (let i = 0; i < totalEntries; i++) {
+    if (view.getUint32(ptr, true) !== 0x02014b50) throw new Error('Corrupt ZIP central directory');
+    const method = view.getUint16(ptr + 10, true);
+    const compSize = view.getUint32(ptr + 20, true);
+    const nameLen = view.getUint16(ptr + 28, true);
+    const extraLen = view.getUint16(ptr + 30, true);
+    const commentLen = view.getUint16(ptr + 32, true);
+    const localHeaderOffset = view.getUint32(ptr + 42, true);
+
+    const name = decoder.decode(buf.subarray(ptr + 46, ptr + 46 + nameLen));
+    ptr += 46 + nameLen + extraLen + commentLen;
+
+    // Read local file header to skip variable extra field
+    const lNameLen = view.getUint16(localHeaderOffset + 26, true);
+    const lExtraLen = view.getUint16(localHeaderOffset + 28, true);
+    const dataStart = localHeaderOffset + 30 + lNameLen + lExtraLen;
+    const rawComp = buf.subarray(dataStart, dataStart + compSize);
+
+    let data;
+    if (method === 0) {
+      data = rawComp.slice();
+    } else if (method === 8) {
+      data = await inflateRaw(rawComp);
+    } else {
+      throw new Error(`Unsupported ZIP compression method: ${method}`);
+    }
+    entries.push({ name, data });
+  }
+
+  return entries;
+}
+async function zipEntries(entries) {
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const cdParts = [];
+  let localOffset = 0;
+
+  for (const entry of entries) {
+    const nameBytes = encoder.encode(entry.name);
+    const uncomp = entry.data instanceof Uint8Array ? entry.data : encoder.encode(String(entry.data));
+    const crc = crc32(uncomp);
+    const comp = uncomp.length > 0 ? await deflateRaw(uncomp) : new Uint8Array(0);
+    const method = uncomp.length > 0 ? 8 : 0;
+
+    const lh = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0x0800, true); // UTF-8 flag
+    lv.setUint16(8, method, true);
+    lv.setUint16(10, 0, true);
+    lv.setUint16(12, 0x5979, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, comp.length, true);
+    lv.setUint32(22, uncomp.length, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    lh.set(nameBytes, 30);
+
+    const cd = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true);
+    cv.setUint16(10, method, true);
+    cv.setUint16(12, 0, true);
+    cv.setUint16(14, 0x5979, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, comp.length, true);
+    cv.setUint32(24, uncomp.length, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, localOffset, true);
+    cd.set(nameBytes, 46);
+
+    localParts.push(lh, comp);
+    cdParts.push(cd);
+    localOffset += lh.length + comp.length;
+  }
+
+  const cdSize = cdParts.reduce((acc, b) => acc + b.length, 0);
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, entries.length, true);
+  ev.setUint16(10, entries.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, localOffset, true);
+
+  const totalLen = localOffset + cdSize + 22;
+  const out = new Uint8Array(totalLen);
+  let pos = 0;
+  for (const p of [...localParts, ...cdParts, eocd]) {
+    out.set(p, pos);
+    pos += p.length;
+  }
+  return out;
+}
+
+function unescapeXml(s) {
+  return s
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+
+function escapeXml(s) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Extract plain readable paragraphs from a .docx buffer (handling split <w:t> runs!).
+ */
+async function extractDocxText(arrayBuffer) {
+  const entries = await unzipEntries(arrayBuffer);
+  const decoder = new TextDecoder('utf-8');
+  const docEntry = entries.find((e) => e.name === 'word/document.xml');
+  if (!docEntry) throw new Error('word/document.xml not found in .docx');
+
+  const xml = decoder.decode(docEntry.data);
+  const paragraphs = [];
+  const pRe = /<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g;
+  let pm;
+  while ((pm = pRe.exec(xml)) !== null) {
+    let pText = '';
+    const tRe = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
+    let tm;
+    while ((tm = tRe.exec(pm[1])) !== null) {
+      pText += unescapeXml(tm[1]);
+    }
+    if (pText.length > 0) paragraphs.push(pText);
+  }
+  return { text: paragraphs.join('\n'), entries };
+}
+
+/**
+ * Replace pairs across all word/*.xml files inside .docx while preserving paragraph & run formatting!
+ * Merges split <w:t> text inside each <w:p> if an entity spans across Word spellcheck/revision run splits.
+ */
+async function replaceInDocx(arrayBuffer, replacements) {
+  const entries = await unzipEntries(arrayBuffer);
+  const decoder = new TextDecoder('utf-8');
+  const encoder = new TextEncoder();
+
+  // Sort replacements longest-first to avoid partial substring collisions
+  const pairs = Object.entries(replacements).sort((a, b) => b[0].length - a[0].length);
+  if (pairs.length === 0) return zipEntries(entries);
+
+  const xmlTargets = /^word\/(document|header\d*|footer\d*)\.xml$/;
+
+  const updatedEntries = entries.map((entry) => {
+    if (!xmlTargets.test(entry.name)) return entry;
+    const xml = decoder.decode(entry.data);
+
+    const newXml = xml.replace(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g, (pBlock) => {
+      // Collect all <w:t> nodes in this paragraph
+      const tNodes = [];
+      const tRe = /(<w:t(?:\s[^>]*)?>)([\s\S]*?)(<\/w:t>)/g;
+      let m;
+      while ((m = tRe.exec(pBlock)) !== null) {
+        tNodes.push({
+          fullStart: m.index,
+          fullEnd: m.index + m[0].length,
+          openTag: m[1],
+          text: unescapeXml(m[2]),
+          closeTag: m[3],
+        });
+      }
+      if (tNodes.length === 0) return pBlock;
+
+      const joined = tNodes.map((n) => n.text).join('');
+      let replaced = joined;
+      for (const [fromStr, toStr] of pairs) {
+        if (replaced.includes(fromStr)) {
+          replaced = replaced.split(fromStr).join(toStr);
+        }
+      }
+      if (replaced === joined) return pBlock;
+
+      // Put replaced paragraph text into first <w:t xml:space="preserve"> and empty subsequent <w:t> runs in this paragraph
+      let outP = '';
+      let cursor = 0;
+      tNodes.forEach((node, idx) => {
+        outP += pBlock.slice(cursor, node.fullStart);
+        if (idx === 0) {
+          outP += `<w:t xml:space="preserve">${escapeXml(replaced)}</w:t>`;
+        } else {
+          outP += `<w:t></w:t>`;
+        }
+        cursor = node.fullEnd;
+      });
+      outP += pBlock.slice(cursor);
+      return outP;
+    });
+
+    return { name: entry.name, data: encoder.encode(newXml) };
+  });
+
+  return zipEntries(updatedEntries);
+}
+
+
+(function initSafeBridgeApp() {
+  const FREE_CHAR_LIMIT = 1500;
+  let isPro = false;
+  let currentMapping = {};
+  let customTerms = JSON.parse(localStorage.getItem('sb_custom_terms') || '[]');
+  let loadedDocxBuffer = null;
+  let loadedDocxName = '';
+
+  const SAMPLE_CONTRACT = [
+    '技术开发与设备采购合同',
+    '',
+    '甲方（委托方）：苏州明达精密制造有限公司',
+    '统一社会信用代码：913205945588123453',
+    '法定代表人：陈建国',
+    '注册地址：江苏省苏州市工业园区星湖街328号创意产业园A座1201室',
+    '联系人：林晓雯　　联系电话：138-6205-9918　　电子邮箱：lin.xw@mingda-demo.cn',
+    '',
+    '乙方（受托方）：上海云帆智能系统股份有限公司',
+    '法定代表人：周明远',
+    '联系地址：上海市浦东新区张江高科技园区科苑路88号3号楼5层',
+    '收款银行账号：6222 0210 0109 8842 156',
+    '联系电话：021-50806612',
+    '',
+    '第一条　项目总价与付款方式',
+    '1.1 本合同含税总价款为 ¥1,280,000.00（大写：人民币壹佰贰拾捌万元整）。',
+    '1.2 合同签订后5个工作日内，苏州明达精密制造有限公司应向上海云帆智能系统股份有限公司支付首付款 384,000元整（大写：人民币叁拾捌万肆仟元整）。',
+    '1.3 若乙方项目负责人周明远团队未能按期完成验收，每逾期一日按合同总额千分之五向甲方承担违约金。',
+  ].join('\n');
+
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(window.__sbToastTimer);
+    window.__sbToastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+  }
+
+  async function checkSavedLicense() {
+    const saved = localStorage.getItem('sb_license_key');
+    if (!saved) return;
+    const res = await verifySafeBridgeKey(saved);
+    if (res.valid) {
+      isPro = true;
+      const badge = document.getElementById('tier-badge');
+      badge.textContent = 'PRO 终身版已激活 · #' + res.serial;
+      badge.classList.add('pro');
+      document.getElementById('pro-title').textContent = '✓ 密桥 SafeBridge Pro 终身授权已激活（编号：' + res.serial + '）';
+    }
+  }
+
+  function renderMappingList(items) {
+    const listEl = document.getElementById('map-list');
+    document.getElementById('stat-unique').textContent = String(items.length);
+    const total = items.reduce((s, it) => s + it.occurrences, 0);
+    document.getElementById('stat-total').textContent = String(total);
+
+    if (items.length === 0) {
+      listEl.innerHTML = '<div class="meta-note" style="text-align:center;padding:28px 10px;">未检测到敏感实体，可手动在上方补充自定义词。</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    for (const item of items) {
+      const row = document.createElement('div');
+      row.className = 'map-item';
+      row.innerHTML = '<span class="tok">' + item.token + '</span><span class="orig" title="' + item.original.replace(/"/g, '&quot;') + '">' + item.original + ' (' + item.occurrences + ')</span>';
+      listEl.appendChild(row);
+    }
+  }
+
+  function runAnonymize() {
+    const raw = document.getElementById('raw-input').value;
+    document.getElementById('char-count').textContent = raw.length + ' 字';
+    if (!raw.trim()) {
+      toast('请先粘贴合同文本或点击「填入示例合同」');
+      return null;
+    }
+    if (!isPro && raw.length > FREE_CHAR_LIMIT) {
+      toast('免费体验版单次限 1,500 字以内，激活下方 Pro 终身版即可解锁不限字数长合同！');
+      return null;
+    }
+    const res = analyzeContractText(raw, { customTerms });
+    currentMapping = res.mapping;
+    document.getElementById('safe-output').value = res.anonymizedText;
+    renderMappingList(res.items);
+    return res;
+  }
+
+  document.getElementById('raw-input').addEventListener('input', (e) => {
+    document.getElementById('char-count').textContent = e.target.value.length + ' 字';
+  });
+
+  document.getElementById('btn-sample').addEventListener('click', () => {
+    loadedDocxBuffer = null;
+    document.getElementById('raw-input').value = SAMPLE_CONTRACT;
+    runAnonymize();
+    toast('已填入示例合同并完成本地秒级脱敏！');
+  });
+
+  document.getElementById('btn-clear').addEventListener('click', () => {
+    loadedDocxBuffer = null;
+    document.getElementById('raw-input').value = '';
+    document.getElementById('safe-output').value = '';
+    document.getElementById('ai-input').value = '';
+    document.getElementById('restored-output').value = '';
+    currentMapping = {};
+    renderMappingList([]);
+    document.getElementById('char-count').textContent = '0 字';
+  });
+
+  document.getElementById('btn-anonymize').addEventListener('click', () => {
+    const r = runAnonymize();
+    if (r) toast('脱敏完成：共保护 ' + r.uniqueEntities + ' 个敏感主体（' + r.totalReplacements + ' 处）');
+  });
+
+  document.getElementById('btn-add-custom').addEventListener('click', () => {
+    const val = document.getElementById('input-custom-term').value.trim();
+    if (!val) return;
+    if (!customTerms.includes(val)) customTerms.push(val);
+    if (isPro) localStorage.setItem('sb_custom_terms', JSON.stringify(customTerms));
+    document.getElementById('input-custom-term').value = '';
+    runAnonymize();
+    toast('已加入敏感词：' + val);
+  });
+
+  document.getElementById('btn-copy-prompt').addEventListener('click', async () => {
+    const safe = document.getElementById('safe-output').value.trim();
+    if (!safe) return toast('请先生成脱敏稿');
+    const prompt = [
+      '请你作为资深中国商事律师审查并优化以下已脱敏合同文本，指出潜在风险条款并给出修改后的完整条款建议。',
+      '【重要格式要求】：正文中所有形如【公司_01】【姓名_01】【金额_01】等方括号脱敏代号，请在你的分析与修改稿中严格原样保留，不要改写或省略括号及编号，以便我后续在本地自动还原真实主体。',
+      '',
+      '--- 以下为已脱敏合同正文 ---',
+      safe,
+    ].join('\n');
+    await navigator.clipboard.writeText(prompt);
+    toast('已复制「防改码审阅指令 + 脱敏全文」，可直接粘贴给 DeepSeek / Kimi！');
+  });
+
+  document.getElementById('btn-copy-plain').addEventListener('click', async () => {
+    const safe = document.getElementById('safe-output').value.trim();
+    if (!safe) return toast('请先生成脱敏稿');
+    await navigator.clipboard.writeText(safe);
+    toast('已复制纯脱敏正文');
+  });
+
+  document.getElementById('btn-sim-ai').addEventListener('click', () => {
+    if (!Object.keys(currentMapping).length) {
+      document.getElementById('raw-input').value = SAMPLE_CONTRACT;
+      runAnonymize();
+    }
+    document.getElementById('ai-input').value = [
+      '【DeepSeek 审阅修改建议稿】',
+      '1. 主体与收款核验建议：建议明确【公司_01】（信用代码：【信用代码_01】）向【公司_02】指定账户（账号：【账号_01】）付款前，【公司_02】须先行开具等额增值税专用发票。',
+      '2. 首付款比例风控：原条款首付款【金额_02】（【大写金额_02】）占总价【金额_01】（【大写金额_01】）的30%，建议增加阶段里程碑验收条件，并约定双方日常履约通知统一发至【姓名_02】（电话：【电话_01】，邮箱：【邮箱_01】）。',
+      '3. 违约金上限修订：原条款由【姓名_03】团队逾期按日千分之五计收偏高，建议调整为每日万分之五，累计不超过合同总额的20%。',
+    ].join('\n');
+    const r = restoreContractText(document.getElementById('ai-input').value, currentMapping);
+    document.getElementById('restored-output').value = r.restoredText;
+    toast('已模拟 AI 返回稿并成功无损还原 ' + r.restoredCount + ' 处真实信息！');
+  });
+
+  document.getElementById('btn-restore').addEventListener('click', () => {
+    const aiVal = document.getElementById('ai-input').value;
+    if (!aiVal.trim()) return toast('请先粘贴 AI 审改后的文本');
+    const r = restoreContractText(aiVal, currentMapping);
+    document.getElementById('restored-output').value = r.restoredText;
+    toast('还原完成：已精确回填 ' + r.restoredCount + ' 处真实主体与金额！');
+  });
+
+  document.getElementById('btn-copy-restored').addEventListener('click', async () => {
+    const v = document.getElementById('restored-output').value;
+    if (!v) return toast('暂无还原结果');
+    await navigator.clipboard.writeText(v);
+    toast('已复制最终还原定稿！');
+  });
+
+  // Pro: .docx import & export
+  document.getElementById('file-docx-in').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    if (!isPro) return toast('导入/导出原格式 Word (.docx) 为 Pro 终身版功能，粘贴激活码即可永久解锁！');
+    try {
+      loadedDocxBuffer = await f.arrayBuffer();
+      loadedDocxName = f.name.replace(/\.docx$/i, '');
+      const { text } = await extractDocxText(loadedDocxBuffer);
+      document.getElementById('raw-input').value = text;
+      runAnonymize();
+      toast('已成功本地解析 Word 文档：' + f.name);
+    } catch (err) {
+      toast('解析 .docx 失败：请确认为标准 Word .docx 格式');
+    }
+  });
+
+  document.getElementById('btn-dl-safe-docx').addEventListener('click', async () => {
+    if (!isPro) return toast('导出原格式脱敏 Word (.docx) 为 Pro 终身版专享功能');
+    if (!loadedDocxBuffer) return toast('请先通过第 1 步「导入 Word (.docx)」载入原文档');
+    const reverseMap = {};
+    for (const [tok, orig] of Object.entries(currentMapping)) reverseMap[orig] = tok;
+    const outBytes = await replaceInDocx(loadedDocxBuffer, reverseMap);
+    downloadBlob(outBytes, loadedDocxName + '-已脱敏安全版.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    toast('已导出保留排版的脱敏 Word 文档！');
+  });
+
+  document.getElementById('file-docx-restore').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    if (!isPro) return toast('Word (.docx) 一键还原为 Pro 终身版专享功能');
+    const buf = await f.arrayBuffer();
+    const outBytes = await replaceInDocx(buf, currentMapping);
+    downloadBlob(outBytes, f.name.replace(/\.docx$/i, '') + '-已还原定稿.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    toast('已生成无损还原真实主体的 Word 定稿！');
+  });
+
+  document.getElementById('btn-export-map').addEventListener('click', () => {
+    if (!isPro) return toast('导出映射备份表 (.json) 为 Pro 终身版功能');
+    if (!Object.keys(currentMapping).length) return toast('当前映射表为空');
+    const bytes = new TextEncoder().encode(JSON.stringify(currentMapping, null, 2));
+    downloadBlob(bytes, 'safebridge-mapping.json', 'application/json');
+  });
+
+  document.getElementById('file-map-in').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      currentMapping = JSON.parse(await f.text());
+      const items = Object.entries(currentMapping).map(([token, original]) => ({
+        token, original, occurrences: 1,
+      }));
+      renderMappingList(items);
+      toast('已载入映射表（共 ' + items.length + ' 项），可直接进行第 4 步还原');
+    } catch {
+      toast('映射表 JSON 格式无效');
+    }
+  });
+
+  document.getElementById('btn-activate').addEventListener('click', async () => {
+    const key = document.getElementById('input-license').value.trim();
+    const res = await verifySafeBridgeKey(key);
+    if (res.valid) {
+      localStorage.setItem('sb_license_key', key);
+      document.getElementById('input-license').value = '';
+      await checkSavedLicense();
+      toast('激活成功！已永久解锁不限字数与 Word (.docx) 原格式进出功能');
+    } else {
+      toast('激活码无效，请核对完整 SBPRO-... 字符串');
+    }
+  });
+
+  function downloadBlob(bytes, filename, mime) {
+    const blob = new Blob([bytes], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  checkSavedLicense();
+})();
+  </script>
+</body>
+</html>

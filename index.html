@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>棱镜造物 PrismLab — 独立效率软件与本地隐私工具作品中心</title>
+  <style>
+    :root {
+      --bg: #070c18; --surface: #0f172a; --card: #15203b;
+      --border: rgba(148,163,184,0.18); --text: #f8fafc; --muted: #94a3b8;
+      --accent: #6366f1; --green: #10b981;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: radial-gradient(circle at 75% 0%, rgba(99,102,241,0.22), transparent 45%), var(--bg);
+      color: var(--text); font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 36px 20px 72px; }
+    .top-verify {
+      display: inline-block; padding: 5px 14px; border-radius: 999px; font-size: 12.5px;
+      background: rgba(16,185,129,0.14); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 34px; margin: 0 0 10px; }
+    .lead { color: var(--muted); font-size: 16px; max-width: 720px; margin: 0 0 34px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+      padding: 24px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .tag {
+      align-self: flex-start; font-size: 12px; font-weight: 600; padding: 3px 10px;
+      border-radius: 999px; background: rgba(99,102,241,0.18); color: #c7d2fe;
+    }
+    .card h2 { margin: 0; font-size: 20px; }
+    .card p { margin: 0; color: var(--muted); font-size: 14px; flex: 1; }
+    .btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    a.btn {
+      text-decoration: none; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 600;
+    }
+    a.primary { background: var(--accent); color: #fff; }
+    a.ghost { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+    footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+    footer a { color: #a5b4fc; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top-verify">✓ 官方作品演示站 · 归属面包多创作者「棱镜造物 PrismLab」(mbd.pub/o/prismlab)</div>
+    <h1>棱镜造物 PrismLab</h1>
+    <p class="lead">
+      专注开发轻量、安全、纯本地离线运行（Local-First）的办公效率工具与浏览器扩展。零云端数据上传，即买即用，拒绝臃肿订阅。
+    </p>
+
+    <div class="grid">
+      <article class="card">
+        <span class="tag">单机离线工作台 · 支持免费在线试用</span>
+        <h2>密桥 SafeBridge v1.0</h2>
+        <p>
+          把机密合同、协议喂给 DeepSeek / Kimi 审阅前的<strong>本地双向脱敏与还原工作台</strong>。自动识别甲乙方公司名、统一社会信用代码、法定代表人、银行账号与大小写金额，支持 Word (<code>.docx</code>) 原格式进出与 1 秒无损还原。
+        </p>
+        <div class="btns">
+          <a class="btn primary" href="safebridge.html">立即打开在线工作台试用 →</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <span class="tag">Edge / Chrome 浏览器扩展</span>
+        <h2>屏隐替身 StageMask v1.0</h2>
+        <p>
+          网页录屏、共享屏幕与教程截图隐私保护扩展。支持一键将敏感手机号、邮箱、密钥替换为逼真演示数据，金额等比缩减脱敏（0.05×–0.80×），按域名零闪现记忆与共享屏幕自动防护。
+        </p>
+        <div class="btns">
+          <a class="btn primary" href="stagemask.html">查看交互演示与功能介绍 →</a>
+          <a class="btn ghost" href="privacy.html">隐私政策</a>
+        </div>
+      </article>
+    </div>
+
+    <footer>
+      © 2026 棱镜造物 PrismLab · 面包多店铺：<a href="https://mbd.pub/o/prismlab">https://mbd.pub/o/prismlab</a> ·
+      <a href="privacy.html">隐私政策 (Privacy)</a> · <a href="terms.html">服务条款 (Terms)</a>
+    </footer>
+  </div>
+</body>
+</html>

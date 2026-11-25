@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StageMask 屏隐替身 — 不只是打码，一键把网页敏感数据换成仿真演示数据</title>
+  <style>
+    :root {
+      --bg: #070c18;
+      --surface: #0f172a;
+      --card: #131f38;
+      --border: rgba(148, 163, 184, 0.18);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #6366f1;
+      --cyan: #22d3ee;
+      --green: #34d399;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.2), transparent 45%), var(--bg);
+      color: var(--text);
+      font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 20px 72px; }
+    nav {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 42px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+    .logo {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: linear-gradient(135deg, #4338ca, #0ea5e9);
+      display: grid; place-items: center; font-weight: 800; color: #fff;
+    }
+    .nav-links { display: flex; gap: 18px; align-items: center; font-size: 14px; }
+    .nav-links a { color: var(--muted); text-decoration: none; }
+    .nav-links a:hover { color: #fff; }
+    .hero { text-align: center; max-width: 780px; margin: 0 auto 38px; }
+    .pill-tag {
+      display: inline-block; padding: 4px 12px; border-radius: 999px;
+      background: rgba(99, 102, 241, 0.16); color: #c7d2fe;
+      border: 1px solid rgba(99, 102, 241, 0.35); font-size: 12.5px; margin-bottom: 14px;
+    }
+    h1 { font-size: clamp(26px, 3.6vw, 38px); line-height: 1.22; margin: 0 0 12px; letter-spacing: -0.4px; }
+    .hero p { color: var(--muted); font-size: 16.5px; margin: 0 0 24px; }
+    .cta-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px;
+      border-radius: 10px; font-weight: 600; text-decoration: none; cursor: pointer;
+      border: 1px solid transparent; font-size: 14.5px;
+    }
+    .btn-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff; }
+    .btn-outline { background: var(--surface); color: var(--text); border-color: var(--border); }
+
+    /* Interactive Demo Playground */
+    .demo-shell {
+      background: var(--surface);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      margin-bottom: 48px;
+    }
+    .demo-toolbar {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 14px 18px; background: #131c31; border-bottom: 1px solid var(--border);
+    }
+    .seg { display: inline-flex; background: #070c18; padding: 4px; border-radius: 10px; gap: 4px; }
+    .seg button {
+      border: none; background: transparent; color: var(--muted);
+      padding: 7px 14px; border-radius: 7px; font-weight: 600; font-size: 13px; cursor: pointer;
+    }
+    .seg button.active[data-view="real"] { background: rgba(248, 113, 113, 0.22); color: #fecaca; }
+    .seg button.active[data-view="blur"] { background: rgba(148, 163, 184, 0.24); color: #fff; }
+    .seg button.active[data-view="fake"] { background: #6366f1; color: #fff; }
+    .scale-ctrl { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+    .scale-ctrl input { accent-color: var(--accent); }
+    .demo-body { padding: 22px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .kpi {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
+    }
+    .kpi .k-lbl { font-size: 12px; color: var(--muted); }
+    .kpi .k-val { font-size: 24px; font-weight: 700; margin-top: 4px; letter-spacing: -0.4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th, td { padding: 11px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; font-size: 12px; }
+    .blur-mode .sensitive { filter: blur(7px); user-select: none; }
+    .badge-ok { color: var(--green); font-weight: 600; }
+    .badge-risk { color: var(--red); font-weight: 600; }
+    .api-box {
+      margin-top: 16px; padding: 12px 14px; border-radius: 10px; background: #091020;
+      border: 1px solid var(--border); font-family: ui-monospace, Consolas, monospace; font-size: 12.5px;
+      display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px;
+    }
+
+    /* Pricing & Features */
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 44px; }
+    .feat {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+    }
+    .feat h3 { margin: 0 0 8px; font-size: 16px; }
+    .feat p { margin: 0; font-size: 13.5px; color: var(--muted); }
+    .pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+    .price-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px;
+    }
+    .price-card.pro {
+      border-color: rgba(99, 102, 241, 0.65);
+      background: linear-gradient(180deg, rgba(99, 102, 241, 0.14), var(--surface) 45%);
+    }
+    .price-num { font-size: 32px; font-weight: 800; margin: 10px 0 4px; }
+    .price-card ul { padding-left: 18px; color: var(--muted); font-size: 13.5px; }
+    .price-card li { margin-bottom: 6px; }
+    footer { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 48px; }
+    footer a { color: #a5b4fc; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <div class="brand"><div class="logo">SM</div> StageMask · 屏隐替身</div>
+      <div class="nav-links">
+        <a href="#demo">在线体验</a>
+        <a href="#pricing">买断价格</a>
+        <a href="privacy.html">隐私政策 (0 上传)</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="pill-tag">Edge / Chrome 浏览器扩展 · 100% 纯本地离线运行</div>
+      <h1>录屏演示，别让丑陋马赛克毁掉画面</h1>
+      <p>
+        StageMask 一键将网页中的真实营收、客户手机号、邮箱、公司名和 API 密钥替换为<strong>逼真的仿真演示数据</strong>，金额按比例自动缩放，界面依然高级整洁，快捷键秒切真值。
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#pricing">免费安装 / 早鸟 ¥19.9 终身买断</a>
+        <a class="btn btn-outline" href="#demo">下方 3 秒亲自体验效果 ↓</a>
+      </div>
+    </section>
+
+    <section id="demo" class="demo-shell">
+      <div class="demo-toolbar">
+        <div class="seg" id="view-switch">
+          <button data-view="real">1. 真实后台（泄露风险）</button>
+          <button data-view="blur">2. 传统模糊（丑且难看）</button>
+          <button class="active" data-view="fake">3. StageMask 仿真替身 ✓</button>
+        </div>
+        <div class="scale-ctrl">
+          <span>金额缩放系数：</span>
+          <input type="range" id="demo-scale" min="0.10" max="0.80" step="0.02" value="0.42" />
+          <strong id="demo-scale-val">0.42×</strong>
+        </div>
+      </div>
+
+      <div class="demo-body" id="demo-canvas">
+        <div class="kpi-grid">
+          <div class="kpi">
+            <div class="k-lbl">本月总成交额 (GMV)</div>
+            <div class="k-val sensitive" data-type="currency" data-real="¥286,400.00">¥286,400.00</div>
+          </div>
+          <div class="kpi">
+            <div class="k-lbl">海外 Stripe 营收 (MRR)</div>
+            <div class="k-val sensitive" data-type="currency" data-real="$42,850.00">$42,850.00</div>
+          </div>
+          <div class="kpi">
+            <div class="k-lbl">当前演示状态</div>
+            <div class="k-val" id="demo-badge" style="font-size:17px;margin-top:10px;">
+              <span class="badge-ok">✓ 仿真替身保护中</span>
+            </div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>客户名称</th>
+              <th>联系邮箱</th>
+              <th>手机号</th>
+              <th>回款金额</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="sensitive" data-type="custom" data-real="明达精密科技有限公司" data-fake="星辰新材演示有限公司">明达精密科技有限公司</td>
+              <td class="sensitive" data-type="email" data-real="finance@mingda-demo.cn" data-fake="alex.chen@acme-demo.io">finance@mingda-demo.cn</td>
+              <td class="sensitive" data-type="phone" data-real="138-8821-9045" data-fake="139-4021-7718">138-8821-9045</td>
+              <td class="sensitive" data-type="currency" data-real="¥96,500.00">¥96,500.00</td>
+            </tr>
+            <tr>
+              <td class="sensitive" data-type="custom" data-real="华东精密制造集团" data-fake="云帆制造示例集团">华东精密制造集团</td>
+              <td class="sensitive" data-type="email" data-real="zhang.wei@hd-mfg.com" data-fake="jordan.lin@northstar-example.com">zhang.wei@hd-mfg.com</td>
+              <td class="sensitive" data-type="phone" data-real="159-6602-3318" data-fake="186-2190-5482">159-6602-3318</td>
+              <td class="sensitive" data-type="currency" data-real="$18,200.00">$18,200.00</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="api-box">
+          <span>Webhook Key: <strong class="sensitive" data-type="key" data-real="sk-proj-98a7f1c2e4b01928374655abcd" data-fake="sk-prdemo_••••••••••••8f2a">sk-proj-98a7f1c2e4b01928374655abcd</strong></span>
+          <span>Server IP: <strong class="sensitive" data-type="ip" data-real="47.103.88.214" data-fake="198.51.100.42">47.103.88.214</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-3">
+      <div class="feat">
+        <h3>🎭 仿真替身 + 按比例缩放金额</h3>
+        <p>同一客户在整页中映射为同一仿真替身，金额按你设定的系数等比缩放，图表、表格和汇总数字逻辑自洽。</p>
+      </div>
+      <div class="feat">
+        <h3>⚡ 零闪现 + 屏幕共享自动防翻车</h3>
+        <p>按域名保存规则，刷新页面前即刻生效不露真值；检测到浏览器共享屏幕时自动拉起防护并伪装标签页标题。</p>
+      </div>
+      <div class="feat">
+        <h3>🔒 100% 本地离线，零网络上传</h3>
+        <p>核心扩展策略声明 <code>connect-src 'none'</code>，无需注册账号、不传云端服务器，财务与客户后台放心用。</p>
+      </div>
+    </section>
+
+    <section id="pricing" class="pricing">
+      <div class="price-card">
+        <div><strong>Free 免费版</strong></div>
+        <div class="price-num">¥0</div>
+        <ul>
+          <li>无限次点击网页元素模糊 / 马赛克 / 黑条遮挡</li>
+          <li>无限次自由框选区域打码（随页面滚动）</li>
+          <li>每次免费预览 5 处智能仿真替身</li>
+          <li>一键纯净脱敏截图（PNG）</li>
+        </ul>
+      </div>
+      <div class="price-card pro">
+        <div><strong>Pro 终身买断版（零订阅 · 自动发激活码）</strong></div>
+        <div class="price-num">¥19.9 <span style="font-size:14px;color:var(--muted);font-weight:500;">早鸟 / Global $9 Lifetime</span></div>
+        <ul>
+          <li>全页无限仿真替身（支持 React/Vue 动态加载页面）</li>
+          <li>自定义金额比例缩放 + 自定义公司/客户敏感词别名</li>
+          <li>按域名零闪现自动记忆 + 屏幕共享自动防护</li>
+          <li>Pro 演示级渐变画框截图 · 离线激活码支持 3 台设备</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer>
+      StageMask · 屏隐替身 · 100% Client-Side Browser Extension · <a href="privacy.html">Privacy Policy / 隐私政策</a>
+    </footer>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('demo-canvas');
+    const badge = document.getElementById('demo-badge');
+    const scaleInput = document.getElementById('demo-scale');
+    const scaleVal = document.getElementById('demo-scale-val');
+    const urlView = new URLSearchParams(location.search).get('view');
+    let currentView = ['real', 'blur', 'fake'].includes(urlView) ? urlView : 'fake';
+    document.querySelectorAll('#view-switch button').forEach((b) => {
+      b.classList.toggle('active', b.dataset.view === currentView);
+    });
+
+    function scaleMoney(raw, factor) {
+      return raw.replace(/\d{1,3}(?:,\d{3})*(?:\.\d{2})?/, (num) => {
+        const val = Number(num.replace(/,/g, '')) * factor;
+        return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      });
+    }
+
+    function applyDemoView() {
+      const factor = Number(scaleInput.value);
+      scaleVal.textContent = factor.toFixed(2) + '×';
+      canvas.classList.toggle('blur-mode', currentView === 'blur');
+
+      document.querySelectorAll('.sensitive').forEach((el) => {
+        const real = el.dataset.real;
+        if (currentView === 'fake') {
+          el.textContent = el.dataset.type === 'currency' ? scaleMoney(real, factor) : el.dataset.fake;
+        } else {
+          el.textContent = real;
+        }
+      });
+
+      if (currentView === 'real') {
+        badge.innerHTML = '<span class="badge-risk">⚠ 真实隐私直接暴露</span>';
+      } else if (currentView === 'blur') {
+        badge.innerHTML = '<span style="color:#cbd5e1;">传统模糊（画面凌乱）</span>';
+      } else {
+        badge.innerHTML = '<span class="badge-ok">✓ 仿真替身保护中</span>';
+      }
+    }
+
+    document.querySelectorAll('#view-switch button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#view-switch button').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentView = btn.dataset.view;
+        applyDemoView();
+      });
+    });
+
+    scaleInput.addEventListener('input', applyDemoView);
+    applyDemoView();
+  </script>
+</body>
+</html>
