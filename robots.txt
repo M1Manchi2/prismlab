@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://m1manchi2.github.io/prismlab/sitemap.xml
